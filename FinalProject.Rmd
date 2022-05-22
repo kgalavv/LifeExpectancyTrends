@@ -1,0 +1,401 @@
+---
+title: "Life Expectancy and factors which impact it"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(warning = FALSE, message = FALSE) 
+library(magrittr)
+library(tidyverse)
+library(dplyr)  
+library(ggplot2)
+library(tidyr)
+library(kableExtra)
+```
+
+## Introduction
+> One of the most interesting health status indicator which has emerged over time is life expectancy. The progress of humanity towards further technological growth and more chaos has made human life expectancy an interesting attribute to be explored. On the one hand, our strides in medical technology has allowed us to tackle illnesses and injuries which were once considered incorrigible. On the other hand, a degradation of our environment caused by this progress of ours has severed our access to basic resources and given rise to super bugs and other calamities. With such conflicting elements at play, we aim to examine the life expectancy trends on a global level so as to gain an insight into the direction our society is progressing. Through this report, we also aim to identify factors which may correlate with life expectancy. We believe this is important as identification of such factors would allow countries to recognize their shortcomings and address them accordingly so as to increase the life expectancy and quality of life for their citizens. Moreover, the identification of such factors on a global level would allow the building of an international roadmap to reverse the damages being caused and also increase life expectancy. Exploring the factors impacting life expectancy will allow global organizations such as the UN to center development goals around these factors and build rehabilitation plans for countries accordingly.
+
+> With this motivation, the central question addressed by our report is: Does there exist an association or correlation between Percentage of GDP spent on healthcare, Percentage of the population with access to drinking water, Percentage of the population with access to sanitation services, and Life Expectancy. These factors were chosen as they act as apt indicators of our society’s progress: percentage of GDP spent on healthcare and percentage of the population with access to sanitation services act as indicators of the world’s growth in the medical sector and percentage of the population with access to drinking water represents the negative effect of industrialization and development on our species. With these factors being the independent variables and life expectancy being the dependent variable, we are able to directly explore how our current lifestyle and development priorities are having an impact on our life expectancy.
+
+> **Thesis Statement**: While factors such as Percentage of the GDP spent on Healthcare and Percentage of the population with access to sanitation services illustrate the growth we have made in the health technology, factors such as Percentage of the population with access to drinking water depict the adverse effects of such development. Exploring the association of such factors with life expectancy would provide direct insight into how our society's behavior and goals are impacting the fate of our species and how we as a society must move forward to increase the quality of life. We expect a postive correlation between Life Expectancy and Percentage of the GDP spent on healthcare, Percentage of the population with access to sanitation services, and Percentage of the population with access to drinking water with a general increasing trend of global Life Expectancy.  
+
+## Background
+This data was obtained from the World Development Indicators Database of the World Bank. According to this website, the countries provide data collected from their population through censuses to the World Bank as part of the internationally agreed upon accordance between countries and the World Bank. This collected data is then compiled by the World Bank so as to be presented in the form of CSV tables which can be viewed and used by the general public. 
+
+The dataset that we will use for the purposes of our analysis has dimensions of *133 x 6*, where each row contains data for each of the key variables described below and for each of the seven regions from 2000-2018. The years 2000-2018 were chosen due to the abundance of data for these years. 
+
+#### Key variables from the dataset
+The variables from the dataset which will be used to conduct the analysis are described below:
+
+**year**^[World Development Indicators. (2021, November 22). Retrieved from https://databank.worldbank.org/source/world-development-indicators] : The year from which the data is from.
+
+**region**^[World Development Indicators. (2021, November 22). Retrieved from https://databank.worldbank.org/source/world-development-indicators] : The region from which the data is from. There are seven different regions: Sub-Saharan Africa, South Asia, North America, Middle East & North Africa, Latin America & Caribbean, Europe & Central Asia, and East Asia & Pacific.
+
+**life_expectancy**^[Life Expectancy. (2021, November 29). Retrieved from https://en.wikipedia.org/wiki/Life_expectancy] : Mean duration that an individual is expected to live in years based on the individual's age, year the individual was born, gender, etc.
+
+**drinking_water**^[World Development Indicators. (2021, November 22). Retrieved from https://databank.worldbank.org/source/world-development-indicators] : Percentage of people with access to clean drinking water.
+
+**sanitation_services**^[World Development Indicators. (2021, November 22). Retrieved from https://databank.worldbank.org/source/world-development-indicators] : Percentage of people with access to basic sanitation services.
+
+**health_expenditure**^[World Development Indicators. (2021, November 22). Retrieved from https://databank.worldbank.org/source/world-development-indicators] : Percentage of GDP spent on health infrastructure.
+
+#### Source of the data
+The data can be found here: https://databank.worldbank.org/source/world-development-indicators
+ 
+#### Unusual factors which may affect interpretation of results
+As mentioned on the website, data from certain countries with minimal data has been ommited from this dataset. Moreover, for the few starting years, data regarding access to clean drinking water in North America is missing. These two factors may have an impact on the interpretation of the results. Along with the data from certain countries already being ommited from the dataset, we will also ommit the missing data regarding access to clean drinking water in North American from our dataset. To be clear, we will not be eliminating the entire row containing the missing data, however, we will just simply not take into consideration the missing value while conducting our analysis. 
+
+#### Analysis of the data
+To answer the primary question of the report, a regression analysis will be employed to determine the significance of the correlation between the aforementioned factors and life expectancy. Before that, we will once have a look at the data and attempt to summarize it numerically so as to get a better understanding of the dataset.
+
+## Numerical Summary
+The first seven rows of the dataset are shown below so as to gain an understanding of the basic strucutre of the dataset.
+
+#### First seven rows of the dataset
+
+```{r, echo = FALSE}
+# The data is expected to be present in the same directory as the R Markdown file. 
+life_expectancy_data = read_csv("./finalProjectData.csv") %>% 
+  rename(year = Time, 
+         region = `Country Name`,
+         life_expectancy = `Life expectancy at birth, total (years) [SP.DYN.LE00.IN]`,
+         drinking_water = `People using at least basic drinking water services (% of population) [SH.H2O.BASW.ZS]`,
+         sanitation_services = `People using at least basic sanitation services (% of population) [SH.STA.BASS.ZS]`,
+         health_expenditure = `Current health expenditure (% of GDP) [SH.XPD.CHEX.GD.ZS]`) %>% 
+  select(year, region, life_expectancy, drinking_water, sanitation_services, health_expenditure)
+
+kable(head(life_expectancy_data, n = 7)) %>% 
+  kable_styling(position = "left", full_width = FALSE,
+                bootstrap_options = c("condensed","striped"))
+```
+
+From the table above, we can see that the basic structure of the dataset involves the year from which the data is from, the region from which the data is from, the life expectancy of that particular year and region, and then the values of the various factors we are exploring for the given year and region. In the table above, we can also see that the data regarding access to drinking water is missing for North America. The data for this particular parameter is missing for North America in the starting few years. 
+
+Given we have data from the years 2000-2018 for each of the seven regions, we can obtain the mean values of the various variables for each region. Such summarization would allow us to compare regions head on with one another. 
+
+#### Mean values of the variables for each region
+
+```{r, echo = FALSE}
+region_summary = life_expectancy_data %>% 
+  group_by(region) %>% 
+  summarise(mean_life_expectancy = mean(life_expectancy), mean_drinking_water = mean(drinking_water, na.rm = TRUE), mean_sanitation_services = mean(sanitation_services), 
+            mean_health_expenditure = mean(health_expenditure))
+kable(region_summary) %>% 
+  kable_styling(position = "left", full_width = FALSE,
+                bootstrap_options = c("condensed","striped"))
+```
+
+From the table above, we can see that we get the mean values of our dataset's variables for the seven different regions. From this table, it can be seen that the North America region has the highest mean life expectancy of around 78.3 years. On the other hand, the Sub-Saharan Africa seems to have lowest mean life expectancy of around 55.8 years.
+
+Along with having the highest mean Life Expectancy, it can also be seen that the North America region has the highest mean percentage of the population with access to clean drinking water and sanitation services. Similarly, for the Sub-Saharan Africa region, we can see that this region also has the lowest mean percentage of the population with access to clean drinking water and sanitation services.
+
+The above observed pattern does not seem to hold completely with mean percentage of GDP spent on healthcare. On the one hand, it can be seen that the North America region still has the highest mean percentage of GDP spent on healthcare which corresponds with the region's high mean life expectancy. However, when we look at the Sub-Saharan Africa region, it can be seen that this region has a higher mean percentage of GDP spent on healthcare than South Asia and even Middle East & North Africa but still this region has a lower mean life expectancy than South Asia and Middle East & North Africa. 
+
+In the above table, we calculated a summary with the mean values for each of the variables grouped by region. We can also calculate a summary involving the mean values for each of the variables grouped by year. Such summarization would allow us to observe the trends in the variables over time on a global level.    
+
+#### Mean values of the variables for each year
+
+```{r, echo = FALSE}
+year_summary = life_expectancy_data %>% 
+  group_by(year) %>% 
+  summarise(mean_life_expectancy = mean(life_expectancy), mean_drinking_water = mean(drinking_water, na.rm = TRUE), mean_sanitation_services = mean(sanitation_services), 
+            mean_health_expenditure = mean(health_expenditure))
+kable(year_summary) %>% 
+  kable_styling(position = "left", full_width = FALSE,
+                bootstrap_options = c("condensed","striped"))
+```
+
+From the above table, it can be seen that the values for each of the parameters have increased over the years. All the parameters have roughly increased at the same, steady rate. While the mean percentage of GDP spent on healthcare has had a few minuscule drops over the years, it has ultimately increased over the years. 
+
+To better understand the global trends and patterns in life expectancy that we were able to witness in the tables above, we present a map of the world below, depicting the life expectancy for the different regions.  
+
+## Life Expectancy of the World (2019)^[Our World In Data. (2021, December 12). Retrieved from https://ourworldindata.org/grapher/life-expectancy]
+
+```{r, echo=FALSE, out.width="75%", fig.align = 'center', fig.cap="Global Life Expectancy (2019)"}
+knitr::include_graphics("life-expectancy.png")
+```    
+
+The above image depicts life expectancy on a global level for the year 2019. This map also agrees with the trends and patterns of global life expectancy that we were able to observe in the numerical summaries above. For example, again, for the year 2019, it can be seen that the life expectancy has increased on a global level with North America's life expectancy touching 80 years and  Sub-Saharan Africa countries' expectancy values going on to touch 60 years. Moreover, again, just as we saw in the numerical summary, in this image as well, it can be seen that the North America still has the highest life expectancy and the Sub-Saharan Africa region has the lowest life expectancy. 
+
+In the next section, we proceed to graphically summarize and analyze our data. We perform regression analysis for our data as a linear fit seems apt for our data. Furthermore, through this method, we will also be able to calculate the correlation coefficient values and check the significance of the slope of the best-fit line via hypothesis tests.  
+
+While this is explored in more detail in the Discussion section of our report, we do realize that through this analysis, we will only be able to determine correlation between the variables we are considering and not causality. Moreover, we also realize that there are many other factors which may have an impact on life expectancy and are not considered in this report. 
+
+## Graphical Summary
+
+#### Life Expectancy trends on a global level
+
+```{r, echo = FALSE}
+ggplot(life_expectancy_data,aes(x = year, y = life_expectancy))+
+  geom_point(alpha=0.2)+
+  geom_smooth(method = "lm", se=FALSE)+
+  scale_x_continuous(breaks = seq(2000, 2018))+
+  labs(title = "Global Life Expectancy", subtitle = "2000-2018", x="Year", y="Life Expectancy (years)")+
+  theme_bw()
+```
+
+As we saw in the previous summary table by year, the best-fit line in the above scatterplot also shows that, on a global level, life expectancy has increased over the years (2000-2018). The points in the above scatterplot were faded so as to explicitly show the number of regions overlapping every year and to show regions appearing as outliers in the observed trend. 
+
+```{r, echo = FALSE}
+linear_fit = lm(life_expectancy ~ year, data = life_expectancy_data)
+```
+
+We get the slope of the best-fit line to be $+0.394$. This indicates that on an yearly basis, the life expectancy is increasing by 0.394 years on average based on the years 2000-2018. 
+
+#### Life Expectancy trends on a global level faceted by regions
+
+```{r, echo = FALSE}
+ggplot(life_expectancy_data, aes(x = year, y = life_expectancy)) +
+  geom_point() +
+  geom_smooth(method = "lm", se=FALSE)+
+  labs(title = "Global Life Expectancy for each region", subtitle = "2000-2018", x="Year", y="Life Expectancy (years)") +
+  facet_wrap(~region, scales = "free", ncol = 2) + 
+  theme_bw()
+```
+
+In the above scatterplots for each of the regions, the best-fit line for each of the seven regions provides further evidence that the life expectancy has been increasing on a global level for the years 2000-2018. 
+
+In the next section, wherein we will conduct regression analysis and check the significance of our slopes, we will make use of the dataset wherein we summarized our parameters based on the seven regions. In this dataset, we had one row for each of the seven regions along with the mean values for each of the parameters. For examining correlation on a global level, we make use of this dataset as it fulfils our purposes and also makes the graphs look less cluttered. For the trends based on region, however, we will continue using the original dataset. 
+
+## Regression Analysis for Life Expectancy vs Access to Sanitation Services
+
+#### Correlation between Life Expectancy and Access to Sanitation Services on a global level
+
+```{r, echo = FALSE}
+ggplot(region_summary, aes(x = mean_sanitation_services, y = mean_life_expectancy)) +
+  geom_point(aes(color = region))+
+  geom_smooth(method = "lm", se = FALSE) + 
+  labs(title = "Life Expectancy vs Access to Sanitation Services globally", subtitle = "2000-2018", x="Access to Sanitation Services (% of population)", y="Life Expectancy (years)") +
+  theme_bw()
+```
+
+```{r, echo = FALSE}
+global_correlation_coefficient = cor(region_summary$mean_sanitation_services, region_summary$mean_life_expectancy)
+```
+
+For the graph of Life Expectancy vs Access to Sanitation Services, we get a correlation coefficient of `r global_correlation_coefficient`.
+
+Looking at the above scatterplot with the best-fit line as well, it appears that, on a global level, there exists a correlation between Life Expectancy and Access to Sanitation Services.
+
+A hypothesis test can be conducted to check the significance of the slope of the regression line. Our hypotheses for this test would be as follows: 
+
+$H_0:\ \beta = 0$    
+$H_A:\ \beta \neq 0$
+
+```{r, echo = FALSE}
+linear_fit = lm(mean_life_expectancy ~ mean_sanitation_services, data = region_summary)
+coef(summary(linear_fit))
+```
+
+From the table above, we obtain a $1.297935*10^{-3}$ p-value for our null hypothesis. Therefore, with an alpha value of $0.05$, it can be seen that we have very strong evidence that the slope of the regression line for Life Expectancy vs Access to Sanitation Services is significantly different from 0.
+
+#### Correlation between Life Expectancy and Access to Sanitation Services faceted by region
+
+```{r, echo = FALSE}
+ggplot(life_expectancy_data, aes(x = sanitation_services, y = life_expectancy)) +
+  geom_point(aes(color = region))+
+  geom_smooth(method = "lm", se = FALSE) + 
+  labs(title = "Life Expectancy vs Access to Sanitation Services Water based on region", subtitle = "2000-2018", x="Access to Sanitation Services (% of population)", 
+       y="Life Expectancy (years)") +
+  facet_wrap(~region, scales = "free", ncol = 2) + 
+  theme_bw()
+```
+
+From the above scatterplots for each of the seven regions and their best-fit lines, we have further evidence that there exists a correlation between Life Expectancy and Access to Sanitation Services on a global level for the years 2000-2018. The correlation coefficients for the plots of each of the seven regions are displayed below:
+
+#### Correlation Coefficients between Life Expectancy and Access to Sanitation Services faceted by region
+
+```{r, echo = FALSE}
+expectancy_sanitation_coefficients = life_expectancy_data %>% 
+  group_by(region) %>% 
+  summarize(correlation_coefficient = cor(sanitation_services, life_expectancy))
+kable(expectancy_sanitation_coefficients) %>% 
+  kable_styling(position = "left", full_width = FALSE,
+                bootstrap_options = c("condensed","striped"))
+```
+
+Again, besides North America, the remaining six regions can be seen having correlation values which are around the same range as the correlation coefficient globally. This further indicates that there does exist a correlation between Life Expectancy and Access to Sanitation Services. A negative correlation for North America seems like a special case which is further discussed in the Discussion section of the report.    
+
+## Regression Analysis for Life Expectancy vs Access to Drinking Water
+
+#### Correlation between Life Expectancy and Access to Drinking Water on a global level
+
+```{r, echo = FALSE}
+ggplot(region_summary, aes(x = mean_drinking_water, y = mean_life_expectancy)) +
+  geom_point(aes(color = region))+
+  geom_smooth(method = "lm", se = FALSE) + 
+  labs(title = "Life Expectancy vs Access to Drinking Water globally", subtitle = "2000-2018", x="Access to Drinking Water (% of population)", y="Life Expectancy (years)") +
+  theme_bw()
+```
+
+
+```{r, echo = FALSE}
+global_correlation_coefficient = cor(region_summary$mean_drinking_water, region_summary$mean_life_expectancy)
+```
+
+For the graph of Life Expectancy vs Access to Drinking Water, we get a correlation coefficient of `r global_correlation_coefficient`.
+
+Looking at the above scatterplot with the best-fit line as well, it appears that, on a global level, there exists a correlation between Life Expectancy and Access to Drinking Water.
+
+A hypothesis test can be conducted to check the significance of the slope of the regression line. Our hypotheses for this test would be as follows: 
+
+$H_0:\ \beta = 0$    
+$H_A:\ \beta \neq 0$
+
+```{r, echo = FALSE}
+linear_fit = lm(mean_life_expectancy ~ mean_drinking_water, data = region_summary)
+coef(summary(linear_fit))
+```
+
+From the table above, we obtain a $0.0005624874$ p-value for our null hypothesis. Therefore, with an alpha value of $0.05$, it can be seen that we have sufficient evidence that the slope of the regression line for Life Expectancy vs Access to Drinking Water is significantly different from 0.
+
+While the p-value is small enough for us to reject the null hypothesis, it can be seen that the current p-value is much larger than the one we previously obtained. 
+
+#### Correlation between Life Expectancy and Access to Drinking Water faceted by region
+
+```{r, echo = FALSE}
+ggplot(life_expectancy_data, aes(x = drinking_water, y = life_expectancy)) +
+  geom_point(aes(color = region))+
+  geom_smooth(method = "lm", se = FALSE) + 
+  labs(title = "Life Expectancy vs Access to Drinking Water based on region", subtitle = "2000-2018", x="Access to Drinking Water (% of population)", y="Life Expectancy (years)") +
+  facet_wrap(~region, scales = "free", ncol = 2) + 
+  theme_bw()
+```
+
+From the above scatterplots for each of the seven regions and their best-fit lines, we have further evidence that there exists a correlation between Life Expectancy and Access to Drinking Water on a global level for the years 2000-2018. The correlation coefficients for the plots of each of the seven regions are displayed below:
+
+
+#### Correlation Coefficients between Life Expectancy and Access to Drinking Water faceted by region
+
+
+```{r, echo = FALSE}
+expectancy_water_coefficients = life_expectancy_data %>% 
+  group_by(region) %>% 
+  summarize(correlation_coefficient = cor(drinking_water, life_expectancy, use = "complete.obs"))
+kable(expectancy_water_coefficients) %>% 
+  kable_styling(position = "left", full_width = FALSE,
+                bootstrap_options = c("condensed","striped"))
+```
+
+Except North America, the correlation coefficients for the other six regions appear to be around the same range as the correlation coefficient globally. This further indicates that there does exist a correlation between Life Expectancy and Access to Drinking Water. Given for the starting few years a few data values of the access to clean drinking water is missing for North America, this might have an impact on the correlation coefficient value for that region. 
+
+## Regression Analysis for Life Expectancy vs Health Expenditure
+
+#### Correlation between Life Expectancy and Health Expenditure on a global level
+
+```{r, echo = FALSE}
+ggplot(region_summary, aes(x = mean_health_expenditure, y = mean_life_expectancy)) +
+  geom_point(aes(color = region))+
+  geom_smooth(method = "lm", se = FALSE) + 
+  labs(title = "Life Expectancy vs Health Expenditure globally", subtitle = "2000-2018", x="Health Expenditure (% of GDP)", y="Life Expectancy (years)") +
+  theme_bw()
+```
+
+```{r, echo = FALSE}
+global_correlation_coefficient = cor(region_summary$mean_health_expenditure, region_summary$mean_life_expectancy)
+```
+
+For the graph of Life Expectancy vs Health Expenditure, we get a correlation coefficient of `r global_correlation_coefficient`.
+
+Looking at the above scatterplot with the best-fit line as well, it appears that, on a global level, there exists atleast some correlation between Life Expectancy and Health Expenditure.
+
+A hypothesis test can be conducted to check the significance of the slope of the regression line. Our hypotheses for this test would be as follows: 
+
+$H_0:\ \beta = 0$    
+$H_A:\ \beta \neq 0$
+
+```{r, echo = FALSE}
+linear_fit = lm(mean_life_expectancy ~ mean_health_expenditure, data = region_summary)
+coef(summary(linear_fit))
+```
+
+From the table above, we obtain a $0.1341169016$ p-value for our null hypothesis. Therefore, with an alpha value of $0.05$, it can be seen that we have very strong evidence that the slope of the regression line for Life Expectancy vs Health Expenditure is not significantly different from 0.
+
+Compared to the previous two regression analyses, we got an even larger p-value in this case such that we were not able to reject the null hypothesis. In fact, from the scatterplot above, while the best-fit line is able to capture the increasing trend of the data points, majority of the points end up falling outside of the best-fit line. Therefore, it appears that a linear regression may not be the ideal method in this case to explore the relationship between Life Expectancy and Health Expenditure.  
+
+#### Correlation between Life Expectancy and Health Expenditure faceted by region
+
+```{r, echo = FALSE}
+ggplot(life_expectancy_data, aes(x = health_expenditure, y = life_expectancy)) +
+  geom_point(aes(color = region))+
+  geom_smooth(method = "lm", se = FALSE) + 
+  labs(title = "Life Expectancy vs Health Expenditure Water based on region", subtitle = "2000-2018", x="Health Expenditure (% of GDP)", 
+       y="Life Expectancy (years)") +
+  facet_wrap(~region, scales = "free", ncol = 2) + 
+  theme_bw()
+```
+
+From the above scatterplots for each of the seven regions, it can be seen that the general trend of the data points is being captured and displayed by the best-fit line, indicating that some correlation may exist between Life Expectancy and Health Expenditure on a global level for the years 2000-2018. However, from our hypothesis test, we were able to conclude that there does not exist an association between the two parameters. The correlation coefficients for the plots of each of the seven regions are displayed below:
+
+#### Correlation Coefficients between Life Expectancy and Health Expenditure faceted by region
+
+```{r, echo = FALSE}
+expectancy_expenditure_coefficients = life_expectancy_data %>% 
+  group_by(region) %>% 
+  summarize(correlation_coefficient = cor(health_expenditure, life_expectancy))
+kable(expectancy_expenditure_coefficients) %>% 
+  kable_styling(position = "left", full_width = FALSE,
+                bootstrap_options = c("condensed","striped"))
+```
+
+In contrast to the previous two regression analyses, in this case we can see that only for the regions East Asia & Pacific and Middle East & North Africa the correlation coefficient values are in the same range as the global correlation coefficient values. The correlation values for the seven regions are quite variable with some being positive while others being negative. The reason for the varying coefficient values for the seven regions appears to be because of the Health Expenditure parameter itself. This is further explored in the Discussion section of the report.
+
+Ultimately, as a result of our hypothesis test, it appears that there does not exist a tangible association between Life Expectancy and Health Expenditure. 
+
+## Discussion
+
+#### Global Life Expectancy trend over the years
+
+For the first graph, we looked at life expectancy values over the years 2000-2018 on a global level. The best-fit line of that graph clearly showed that the life expectancy has increased over the years. In fact, from the slope of the line of the best-fit, it can be seen that the life expectancy has increased by 0.394 years on average on an yearly basis for the years of 2000-2018. This implies that while our developmental progress is giving rise to phenomenons which are affecting our lives, our advancements in medical technology have constantly been ahead of such calamities in saving lives and also increasing the life spans of us humans in the face of such adversities. In the next graph, we looked at the trends in life expectancy over the years for each of the seven regions separately. In this graph, it could be seen that countries with low life expectancy values had the most drastic increase in life expectancy over time, as seen by the large slopes of their best-fit lines. This implies that after reaching a certain peak, the life expectancy seems to increase at quite a slow pace. For the North America region, however, it can be seen that there was a brief drop in life expectancy in 2005. While this seemed like an outlier at first, after close examination it was found that during the year 2005, a surprising number of natural calamities such as hurricanes and cyclones struck the region. In particular, Hurricane Katrina had a massive impact on the United States and was ranked as the costliest natural disaster in United States history. Similarly, there was a drop in life expectancy for the Europe and Central Asia region in the year 2015. This drop may have been due to the ongoing civil war and government instability present in countries such as Afghanistan and Somalia. 
+
+There might have been some anomalies in these results due to the recent creation of countries such as Kosovo and South Sudan which have not reported data on Life Expectancy and other parameters.
+
+#### Correlation of Life Expectancy vs Access to Sanitation Services
+
+After a graphical and numerical examination of the relationship between Life Expectancy and Access to Sanitation Services, it can be concluded that there exists a correlation between the two. In fact, we get a global correlation value of $0.9454183$. Since this correlation value is close to +1, this means a strong positive correlation exists between the two parameters. A strong positive correlation implies that as Access to Sanitation Services increases, so does Life Expectancy. Furthermore, through the result of our hypothesis test, we were also able to conclude that an association exists between Life Expectancy and Access to Sanitation Services. That is, our hypothesis test enabled us to justify the presence of the relationship we witnessed as a result of the best-fit line and correlation value. Additionally, as the points on the graph have been colored on the basis of the seven regions, it can be seen that the Sub-Saharan Africa region has the lowest access to sanitation services and a low life expectancy value. Upon examining the correlation between Life Expectancy and Access to Sanitation Services based on the seven regions, our graphical and numerical values also pointed towards the presence of a correlation between the two values. Besides North America, the six remaining regions had correlation values close to +1, implying a strong positive correlation between Life Expectancy and Access to Sanitation Services. The reason behind the existence of such a strong positive correlation is the fact that as sanitation services become more accessible, there results in a drop in the spread of diseases which in turn improves health and quality of life of individuals. 
+
+In this case, the region of North America appears to be an outlier to the trend having a correlation value of $-0.7705932$. Upon close inspection of the percentage of the population with access to sanitation services in this region, it can be seen that this region has had an extremely high percentage of people with access to sanitation services since the beginning. Therefore, with such a high percentage, the impact of this parameter on life expectancy reduces and other factors end up having a larger impact on life expectancy. Furthermore, the various natural calamities such as the Hurricane Katrina and the massive earthquake in Haiti may have also contributed to reducing the impact of sanitation on Life Expectancy in this region.  
+
+#### Correlation of Life Expectancy vs Access to Drinking Water
+
+After a graphical and numerical examination of the relationship between Life Expectancy and Access to Drinking Water, it can be concluded that there exists a strong positive correlation between the two. We got a global correlation value of $0.9610676$. Since this correlation value is close to +1, this means a strong positive correlation exists between the two parameters. A strong positive correlation implies that as Access to Drinking Water increases, so does Life Expectancy. Furthermore, through the result of our hypothesis test, we were also able to conclude that an association exists between Life Expectancy and Access to Drinking Water. That is, our hypothesis test enabled us to justify the presence of the relationship we witnessed as a result of the best-fit line and correlation value. Additionally, as the points on the graph have been colored on the basis of the seven regions, it can be seen that the Sub-Saharan Africa region has the lowest access to drinking water and a low life expectancy value. Upon examining the correlation between Life Expectancy and Access to Drinking Water based on the seven regions, our graphical and numerical values also pointed towards the presence of a correlation between the two values. The seven regions had correlation values close to +1, implying a strong positive correlation between Life Expectancy and Access to Sanitation Services. The reason behind the existence of such a strong positive correlation is the fact that as drinking become more accessible, there results in a drop in the spread of water-borne diseases and also the adverse effects of drinking water contaminated with chemicals and other pollutants are overturned which in turn improves health and quality of life of individuals. 
+
+While all the six regions had correlation values extremely close to +1, in agreement with the global coefficient value, the region of North America had a correlation value of $0.7068788$. There might be a couple of reasons behind this. For example, the missing data for access to drinking water in North America for the few initial years may have a role to play in this. Another reason may be similar to the case which we saw with Access to Sanitation Services. Given this region has an extremely high percentage of the population with access to drinking water, the impact of this parameter on Life Expectancy me be reduced. In such regions with extremely high values of access to sanitation and drinking water, other uncontrollable factors such as natural calamities seem to influence life expectancy values more than these parameters.  
+
+#### Correlation of Life Expectancy vs Health Expenditure
+
+Based on the graphical and numerical examination of the relationship between Life Expectancy and Health Expenditure, it can be concluded that there does not seem to exist a discernible correlation between the two. We got a global correlation value of $0.6241328$. However, while this correlation value is close to +1 and indicates a moderately positive correlation between the two parameters, our hypothesis test indicated the lack of an association between the two parameters. That is, while our regression analysis indicated a loose positive correlation between Life Expectancy and Health Expenditure, our hypothesis test enabled us to see that such is not the case. Therefore, it appears that the relationship between these two variables requires a different model so as to be analysed. Based on the graph on a global level and even based on regions, it appeared loosely that as health expenditure increased, there was an increase in the life expectancy. For some regions such as South Asia, a negative relationship was observed between Life Expectancy and Health Expenditure. This was something which was not expected by us. A possible reason for why a positive relation between these variables is plausible is that as health expenditure is increased, we have better health technology and trained professionals to treat patients, which ultimately results in a higher life span for individuals due to such technology. 
+
+Contrary to our previous analyses, here, it was observed that the correlation values for the seven regions were quite variable. A clear, discernible pattern could not be observed within the correlation values of the regions besides the regions of East Asia & Pacific and Middle East & North Africa. A reason for this might be the fact that given we are dealing with percentage of the GDP spent on healthcare, the impact of this variable would be largely dependent on the GDP value for that particular region. Furthermore, since each of the seven regions, depending on the countries encompassed within that particular region, are bound to have different GDP values, we might not be obtaining a clear correlation in this case. This also explains the varying correlation coefficient values we obtained for the seven regions. 
+
+#### Regression Line Slopes Hypothesis Tests
+
+For each of our regression analyses, we conducted hypothesis tests to determine the significance of the slopes of their relationships. For the cases wherein we rejected the null hypothesis, we were able to conclude that the slope was significantly different from 0 and that there was an association between that particular parameter and life expectancy. However, in the case of Life Expectancy vs Health Expenditure, due to our large p-value, we were unable to reject the null hypothesis and hence got the result that the slope of the relationship was not significantly different from 0 and that there did not exist an association between the variables. Conducting these tests along with the coefficient values proved to be useful as we were able to verify whether a relationship actually exists between two parameters or not. If we had solely relied on fitting a line of best-fit and the correlation coefficient values, we might have mistakenly assumed the presence of associations where none actually existed.  
+
+Another interesting aspect observed from these tests was the relative size of the p-values helped in assessing the fit of the model. It was observed that as the size of the p-value increased, the points of the scatterplot fit the best-fit line less appropriately compared to when the p-value was smaller. This is another instance of why conducting the hypothesis tests along with regression analysis was quite helpful for our report. 
+
+#### Final Thoughts
+
+Through our analysis, we are able to conclude that throughout the years, Life Expectancy has continued to increase on a global level and even on a regional basis. While certain uncontrollable calamities or events have resulted in a drop in life expectancy for certain specific regions, globally, Life Expectancy can be seen with a steady, positive trend. Furthermore, the result of our analysis also enables us to answer the main question we sought out to explore:  Does there exist an association or correlation between Percentage of GDP spent on Healthcare, Percentage of the population with access to drinking water, Percentage of the population with access to sanitation services, and Life Expectancy?. Through our analysis, we are able to conclude that while there exists an association between Life Expectancy and Access to Sanitation Services and Drinking Water, a similar, strong association does not exist between Life Expectancy and Health Expenditure. While there might be a weaker or even different relationship between these two parameters, this was not able to be captured by our model. 
+
+One of the main shortcomings of our analysis would be the fact that correlation does not imply causation. While we were able to investigate the existence of an association or correlation between the various parameters and Life Expectancy, we are unable to make the claim that one of these parameters actually causes an increase or decrease in life expectancy or the fact that there exists a causal relationship. Another shortcoming of our analysis may involve our choice of the parameter percentage of GDP spent on healthcare. This is because the interpretation of this percentage value is largely dependent on the actual GDP of a particular region such that even the same percentage values represent different amounts of money being employed in the health sector. Therefore, this may not be an appropriate indicator for Life Expectancy. Lastly, since the definition of life expectancy is based around factors including the individual's age and gender, the exclusion of those parameters from our analysis act as other pitfalls of our report. 
+
+To further extend the scope of our report, our analysis could explore other questions or lenses. For example, given natural calamities could be seen having an impact on the results of some of our analyses, we could explore the extent of impact of these phenomenon on life expectancy. We could also consider other factors such as the association between the number of doctors or cost of healthcare with life expectancy for that particular region. Lastly, instead of examining this question based on these broad seven regions, we can explore our question based on a dataset for the individual countries in the world. Instead of a linear regression model, we can also attempt to analyse or fit the data with other models and examine if we are able to get a stronger association between the parameters. Ultimately, through these different forms of analyses, we hope that we will be able to extend the scope of our report so that we can meet our original goal: to help countries and international organizations to identify potential factors to focus on to increase the quality of life for all the citizens of the world.  
+
+
+## References 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
